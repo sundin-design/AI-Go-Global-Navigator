@@ -394,3 +394,494 @@ function getMockCountryData(industryName, countryName) {
     ]
   }
 }
+
+export async function analyzeEmail(emailContent) {
+  const prompt = `
+请作为资深外贸邮件分析师，完成以下完整分析流程：
+
+## Step 1：翻译邮件
+将邮件内容翻译成中文，保持原意不变，保留商务语境。
+
+## Step 2：客户画像分析
+基于邮件内容推测：
+- 客户类型（贸易商/制造商/工程商/分销商/终端用户）
+- 国家地区（根据邮箱域名、语言、签名等判断）
+- 所属行业
+- 采购角色（采购经理/CEO/工程师/创始人等）
+- 公司规模（推测：小型/中型/大型企业）
+
+## Step 3：采购意图分析
+识别：
+- 咨询产品
+- 采购目的（新项目/补货/替代供应商/样品测试等）
+- 采购阶段（初步了解/比价阶段/样品测试/即将下单/长期合作）
+- 采购意向等级（高/中/低）
+
+## Step 4：风险识别
+识别邮件中的风险点和机会点：
+例如：价格敏感、仅询价、样品测试、竞争比价、长期合作、代理商可能、项目采购、快速成交可能等
+
+## Step 5：生成回复建议
+生成三种风格的回复：
+1. 专业商务版 - 适合正式客户、大客户
+2. 友好沟通版 - 适合建立关系、中小客户
+3. 强销售跟进版 - 适合促进成交、高意向客户
+每种风格必须同时提供完整的英文和中文版本邮件。
+
+## Step 6：客户开发建议
+推荐3-4个最适合的客户开发渠道，并说明为什么适合这个客户。
+
+## Step 7：下一步行动建议
+给出4-5个具体的下一步行动建议，按优先级排序，形成行动路线图。
+
+请返回以下严格的JSON格式：
+
+{
+  "translation": "邮件中文翻译（完整保留原意）",
+  "customerProfile": {
+    "type": "客户类型",
+    "region": "国家地区",
+    "industry": "所属行业",
+    "role": "采购角色",
+    "companySize": "公司规模（推测）"
+  },
+  "intent": {
+    "product": "咨询产品",
+    "purpose": "采购目的",
+    "stage": "采购阶段",
+    "level": "高/中/低"
+  },
+  "risks": ["风险点1", "风险点2", "风险点3", "风险点4"],
+  "replies": [
+    {
+      "title": "专业商务版",
+      "en": "完整英文回复邮件",
+      "zh": "完整中文回复邮件"
+    },
+    {
+      "title": "友好沟通版",
+      "en": "完整英文回复邮件",
+      "zh": "完整中文回复邮件"
+    },
+    {
+      "title": "强销售跟进版",
+      "en": "完整英文回复邮件",
+      "zh": "完整中文回复邮件"
+    }
+  ],
+  "channels": [
+    {
+      "name": "渠道名称",
+      "description": "为什么推荐这个渠道，怎么操作",
+      "color": "#颜色代码"
+    }
+  ],
+  "nextActions": [
+    {
+      "title": "行动标题",
+      "description": "具体行动说明"
+    }
+  ]
+}
+
+请确保返回标准JSON格式，不包含任何额外说明。
+
+邮件内容：
+${emailContent}`
+
+  const response = await callDeepSeekAPI(prompt, SYSTEM_PROMPT)
+  const data = parseAIResponse(response)
+  
+  if (data && data.translation && data.replies) {
+    return normalizeEmailData(data)
+  }
+  
+  return getMockEmailData(emailContent)
+}
+
+function normalizeEmailData(data) {
+  return {
+    translation: data.translation || '',
+    customerProfile: data.customerProfile || {
+      type: '—',
+      region: '—',
+      industry: '—',
+      role: '—',
+      companySize: '—'
+    },
+    intent: data.intent || {
+      product: '—',
+      purpose: '—',
+      stage: '—',
+      level: '中'
+    },
+    risks: data.risks || [],
+    replies: (data.replies || []).map(reply => ({
+      title: reply.title || '',
+      en: reply.en || '',
+      zh: reply.zh || ''
+    })),
+    channels: (data.channels || []).map(channel => ({
+      name: channel.name || '',
+      description: channel.description || '',
+      color: channel.color || '#00d4ff'
+    })),
+    nextActions: (data.nextActions || []).map(action => ({
+      title: action.title || '',
+      description: action.description || ''
+    }))
+  }
+}
+
+function getMockEmailData(emailContent) {
+  return {
+    translation: '这是一封来自海外客户的商务邮件。客户表达了对我们产品的兴趣，询问了产品规格、价格和交货期等信息。客户可能正在寻找可靠的供应商，希望建立长期合作关系。',
+    customerProfile: {
+      type: '贸易商/分销商',
+      region: '东南亚（马来西亚）',
+      industry: '新能源/光伏',
+      role: '采购经理',
+      companySize: '中型企业（50-200人）'
+    },
+    intent: {
+      product: '客户关注的产品',
+      purpose: '采购/询价',
+      stage: '初步接触',
+      level: '中'
+    },
+    risks: ['价格敏感', '仅询价', '样品需求'],
+    replies: [
+      {
+        title: '专业商务版',
+        en: 'Dear [Customer Name],\n\nThank you for your email and interest in our products. We appreciate your inquiry and would be delighted to provide you with detailed information.\n\nRegarding your questions:\n1. Product specifications: Our products meet international standards and come with complete certifications.\n2. Pricing: We offer competitive pricing based on order quantity.\n3. Lead time: Standard delivery is within 30-45 days after receipt of deposit.\n\nPlease let us know your specific requirements so we can provide you with a tailored quotation. We look forward to the possibility of working together.\n\nBest regards,\n[Your Name]',
+        zh: '尊敬的[客户名称]：\n\n感谢您的来信以及对我们产品的关注。我们非常重视您的询价，并乐意提供详细信息。\n\n关于您的问题：\n1. 产品规格：我们的产品符合国际标准，拥有完整的认证。\n2. 价格：我们根据订单数量提供有竞争力的价格。\n3. 交货期：标准交货期为收到定金后30-45天。\n\n请告知您的具体需求，以便我们提供定制报价。期待与您合作。\n\n此致，\n[您的姓名]'
+      },
+      {
+        title: '友好沟通版',
+        en: 'Hi [First Name],\n\nThanks so much for reaching out! Great to hear you\'re interested in our products.\n\nQuick answers to your questions:\n- We have all the specs and certifications you need\n- Prices are very competitive, especially for larger orders\n- Delivery is usually 3-5 weeks\n\nWould love to chat more about what you\'re looking for. Let me know if you have any other questions!\n\nCheers,\n[Your Name]',
+        zh: '嗨[名字]：\n\n非常感谢您的来信！很高兴听到您对我们的产品感兴趣。\n\n快速回答您的问题：\n- 我们有您需要的所有规格和认证\n- 价格非常有竞争力，特别是对于大订单\n- 交货通常需要3-5周\n\n很乐意进一步了解您的需求。如有其他问题，请随时告诉我！\n\n祝好，\n[您的姓名]'
+      },
+      {
+        title: '强销售跟进版',
+        en: 'Dear [Customer Name],\n\nThank you for your inquiry! This is a great opportunity to discuss how our products can meet your needs.\n\nKey advantages of working with us:\n✅ Competitive pricing with volume discounts\n✅ Fast delivery within 30 days\n✅ Free samples available\n✅ Dedicated account manager\n✅ 24/7 technical support\n\nTo move forward quickly, could you please share:\n1. Your target price range\n2. Expected order quantity\n3. Delivery timeline\n\nWe can offer a special introductory price for your first order. Don\'t miss this opportunity!\n\nBest regards,\n[Your Name]',
+        zh: '尊敬的[客户名称]：\n\n感谢您的询价！这是一个很好的机会来讨论我们的产品如何满足您的需求。\n\n与我们合作的主要优势：\n✅ 有竞争力的价格，提供批量折扣\n✅ 30天内快速交货\n✅ 免费样品\n✅ 专属客户经理\n✅ 7×24技术支持\n\n为了快速推进，能否请您分享：\n1. 目标价格范围\n2. 预计订单数量\n3. 交货时间\n\n我们可以为您的第一笔订单提供特别优惠价。不要错过这个机会！\n\n此致，\n[您的姓名]'
+      }
+    ],
+    channels: [
+      {
+        name: 'LinkedIn 开发',
+        description: '通过LinkedIn查找该公司关键决策人，建立一对一联系，适合B2B客户开发',
+        color: '#0077b5'
+      },
+      {
+        name: '行业展会',
+        description: '参加当地行业展会面对面交流，快速建立信任，适合东南亚市场',
+        color: '#f59e0b'
+      },
+      {
+        name: '当地代理商',
+        description: '寻找马来西亚本地代理商，利用本地资源快速打开市场',
+        color: '#10b981'
+      },
+      {
+        name: 'Google SEO',
+        description: '通过英文官网SEO获取自然流量，建立品牌专业形象',
+        color: '#7c3aed'
+      }
+    ],
+    nextActions: [
+      {
+        title: '回复客户邮件',
+        description: '24小时内回复，使用专业商务版模板，附上产品目录和报价单'
+      },
+      {
+        title: '提供详细报价',
+        description: '根据客户需求量身定制报价，包含MOQ、交货期、付款方式'
+      },
+      {
+        title: '主动跟进',
+        description: '3天后如未回复，发送跟进邮件询问是否有进一步问题'
+      },
+      {
+        title: 'LinkedIn触达',
+        description: '在LinkedIn上添加客户联系人，建立多渠道联系'
+      },
+      {
+        title: '样品准备',
+        description: '如客户有意向，准备样品和测试报告，推动进入样品测试阶段'
+      }
+    ]
+  }
+}
+
+// 带上下文的会议分析（支持会话记忆）
+export async function analyzeMeetingWithContext(speechText, context = null) {
+  // 构建上下文信息
+  const contextInfo = context ? buildContextPrompt(context) : ''
+  
+  const prompt = `
+请作为专业外贸会议助手，完成以下任务：
+
+## Step 1：翻译发言
+将客户的英文发言翻译成中文，保持原意。
+
+## Step 2：识别关键词
+仔细分析客户发言，判断是否包含以下关键问题类型（可以选择0-3个）：
+- 价格问题：客户询问价格、报价、成本、预算相关
+- MOQ问题：客户询问最小起订量、数量要求相关
+- 交期问题：客户询问交货时间、生产周期、发货时间相关
+- 样品问题：客户询问样品、样品费用、打样相关
+- 付款方式问题：客户询问付款条件、结算方式、信用期相关
+- 代理合作：客户询问代理、合作伙伴、渠道相关
+- 产品规格：客户询问产品参数、技术规格、认证相关
+- 合作意向：客户表示合作兴趣、访问意愿、签约意向
+
+如果客户发言只是简单的问候、自我介绍、闲聊，没有明确问题时，返回空数组 []。
+
+## Step 3：识别客户意图
+分析客户发言的核心意图（只选一个最可能的）：
+- 询问身份：询问公司/产品/供应商身份
+- 了解产品：想了解产品信息和特点
+- 价格谈判：关注价格和成本
+- 商务谈判：讨论合作条款
+- 建立关系：建立信任和联系
+- 其他：如果无法归类
+
+${contextInfo}
+
+请返回以下严格的JSON格式：
+
+{
+  "translation": "中文翻译",
+  "keywords": ["关键词1", "关键词2"],
+  "intent": "客户意图",
+  "replies": [
+    {
+      "title": "商务版",
+      "en": "英文回复",
+      "zh": "中文回复"
+    },
+    {
+      "title": "友好版",
+      "en": "英文回复",
+      "zh": "中文回复"
+    },
+    {
+      "title": "成交推进版",
+      "en": "英文回复",
+      "zh": "中文回复"
+    }
+  ]
+}
+
+请确保返回标准JSON格式，不包含任何额外说明。
+
+客户发言：
+${speechText}`
+
+  const response = await callDeepSeekAPI(prompt, MEETING_SYSTEM_PROMPT)
+  const data = parseAIResponse(response)
+  
+  if (data && data.translation) {
+    return normalizeMeetingData(data)
+  }
+  
+  return getMockMeetingData(speechText)
+}
+
+// 构建上下文提示
+function buildContextPrompt(context) {
+  if (!context || !context.recentConversation) return ''
+
+  const lines = []
+  
+  // 最近对话历史
+  if (context.recentConversation.length > 0) {
+    lines.push('## 上下文信息')
+    lines.push('')
+    lines.push('以下是本次会议中客户之前的发言记录，请在分析时结合这些上下文：')
+    lines.push('')
+    
+    context.recentConversation.slice(-5).forEach(turn => {
+      lines.push(`客户说: "${turn.text}"`)
+      if (turn.translation) {
+        lines.push(`翻译: "${turn.translation}"`)
+      }
+      if (turn.keywords && turn.keywords.length > 0) {
+        lines.push(`已识别关键词: ${turn.keywords.join(', ')}`)
+      }
+      lines.push('')
+    })
+  }
+
+  // 关键词记忆
+  if (context.keywordSummary && Object.keys(context.keywordSummary).length > 0) {
+    lines.push('## 关键词记忆')
+    lines.push('客户在本次会议中已多次提及以下关键问题：')
+    lines.push('')
+    
+    Object.keys(context.keywordSummary).forEach(keyword => {
+      const info = context.keywordSummary[keyword]
+      lines.push(`- ${keyword}: 已提及${info.totalCount}次 (紧急度: ${info.urgency})`)
+    })
+    lines.push('')
+    
+    // 高紧急度关键词提醒
+    const highUrgencyKeywords = Object.keys(context.keywordSummary).filter(k => 
+      context.keywordSummary[k].urgency === 'high'
+    )
+    if (highUrgencyKeywords.length > 0) {
+      lines.push(`注意: ${highUrgencyKeywords.join('、')}是紧急问题，建议在回复中优先处理。`)
+      lines.push('')
+    }
+  }
+
+  // 对话流程阶段
+  if (context.conversationFlow) {
+    const flowNames = {
+      'initial': '初期接触',
+      'exploration': '需求探索',
+      'introduction': '产品介绍',
+      'negotiation': '价格谈判',
+      'closing': '成交推进'
+    }
+    lines.push(`## 当前对话阶段: ${flowNames[context.conversationFlow] || context.conversationFlow}`)
+    lines.push('')
+  }
+
+  // 意图总结
+  if (context.intentSummary && Object.keys(context.intentSummary).length > 0) {
+    lines.push('## 已识别意图')
+    Object.keys(context.intentSummary).forEach(intent => {
+      const info = context.intentSummary[intent]
+      lines.push(`- ${intent}: 出现${info.count}次`)
+    })
+    lines.push('')
+  }
+
+  return lines.join('\n')
+}
+
+// 会议专用系统提示
+const MEETING_SYSTEM_PROMPT = `你是一位专业的外贸会议翻译助手，帮助外贸销售与海外客户进行实时沟通。
+
+你的核心任务是：
+1. 准确翻译客户的英文发言为中文
+2. 识别客户关注的关键问题类型
+3. 分析客户的采购意图
+4. 生成三种风格的回复建议
+
+回复建议要求：
+- 商务版：正式、专业，适合首次接触或重要客户
+- 友好版：轻松、亲切，适合建立长期关系
+- 成交推进版：积极、主动，推动客户做出决策
+
+请严格按照JSON格式返回结果，确保前端能够稳定解析。`
+
+export async function analyzeMeeting(speechText) {
+  const prompt = `
+请作为专业外贸会议助手，完成以下任务：
+
+## Step 1：翻译发言
+将客户的英文发言翻译成中文，保持原意。
+
+## Step 2：识别关键词
+识别发言中的关键问题类型，从以下列表中选择：
+- 价格问题
+- MOQ问题
+- 交期问题
+- 样品问题
+- 付款方式问题
+- 代理合作问题
+- 产品规格问题
+- 质量认证问题
+- 售后服务问题
+- 其他
+
+## Step 3：理解意图
+理解客户当前的意图和关注点。
+
+## Step 4：生成回复建议
+根据客户发言生成三种风格的回复建议：
+1. 商务版 - 正式专业的回复
+2. 友好版 - 轻松友好的回复
+3. 成交推进版 - 积极推动成交的回复
+
+每种回复必须同时提供英文和中文版本。
+
+请返回以下严格的JSON格式：
+
+{
+  "translation": "中文翻译",
+  "tags": ["关键词1", "关键词2"],
+  "replies": [
+    {
+      "title": "商务版",
+      "en": "英文回复",
+      "zh": "中文回复"
+    },
+    {
+      "title": "友好版",
+      "en": "英文回复",
+      "zh": "中文回复"
+    },
+    {
+      "title": "成交推进版",
+      "en": "英文回复",
+      "zh": "中文回复"
+    }
+  ]
+}
+
+请确保返回标准JSON格式，不包含任何额外说明。
+
+客户发言：
+${speechText}`
+
+  const response = await callDeepSeekAPI(prompt, SYSTEM_PROMPT)
+  const data = parseAIResponse(response)
+  
+  if (data && data.translation) {
+    return normalizeMeetingData(data)
+  }
+  
+  return getMockMeetingData(speechText)
+}
+
+function normalizeMeetingData(data) {
+  return {
+    translation: data.translation || '',
+    keywords: data.keywords || data.tags || [],
+    intent: data.intent || '',
+    replies: (data.replies || []).map(reply => ({
+      title: reply.title || '',
+      en: reply.en || '',
+      zh: reply.zh || ''
+    }))
+  }
+}
+
+function getMockMeetingData(speechText) {
+  return {
+    translation: '您好，我们对贵公司的产品很感兴趣，想了解更多关于产品规格和价格的信息。',
+    keywords: ['价格问题', '产品规格问题'],
+    intent: '客户正在了解产品信息和价格',
+    replies: [
+      {
+        title: '商务版',
+        en: 'Thank you for your interest in our products. We would be delighted to provide you with detailed information about our product specifications and pricing. Could you please specify which products you are particularly interested in?',
+        zh: '感谢您对我们产品的关注。我们非常乐意提供产品规格和价格的详细信息。请问您对哪些产品特别感兴趣？'
+      },
+      {
+        title: '友好版',
+        en: 'Great to hear you like our products! Happy to share more details. What specific products or specs are you curious about?',
+        zh: '很高兴您喜欢我们的产品！很乐意分享更多细节。您对哪些具体产品或规格感兴趣？'
+      },
+      {
+        title: '成交推进版',
+        en: 'Excellent! To help us provide the best pricing and specs for you, could you please let us know:\n1. Which specific products you are interested in?\n2. What quantity are you looking to purchase?\n3. Any specific technical requirements?\n\nThis will allow us to give you our most competitive offer!',
+        zh: '太棒了！为了给您提供最好的价格和规格信息，请您告知：\n1. 您对哪些具体产品感兴趣？\n2. 您计划采购的数量是多少？\n3. 是否有特殊技术要求？\n\n这样我们可以为您提供最具竞争力的报价！'
+      }
+    ]
+  }
+}

@@ -15,6 +15,16 @@ const routes = [
     path: '/country/:id',
     name: 'CountryDetail',
     component: () => import('../views/CountryDetail.vue')
+  },
+  {
+    path: '/mail-assistant',
+    name: 'MailAssistant',
+    component: () => import('../views/MailAssistant.vue')
+  },
+  {
+    path: '/meeting-assistant',
+    name: 'MeetingAssistant',
+    component: () => import('../views/MeetingAssistant.vue')
   }
 ]
 

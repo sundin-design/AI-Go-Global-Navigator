@@ -8,6 +8,11 @@
           </div>
           <span class="logo-text">AI Go Global</span>
         </div>
+        <nav class="nav">
+          <router-link to="/" class="nav-link active">首页</router-link>
+          <router-link to="/mail-assistant" class="nav-link">AI邮件助手</router-link>
+          <router-link to="/meeting-assistant" class="nav-link">AI会议助手</router-link>
+        </nav>
       </div>
     </header>
 
@@ -244,7 +249,27 @@ const cards = [
   padding: 16px 32px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+}
+
+.nav {
+  display: flex;
+  gap: var(--spacing-lg);
+}
+
+.nav-link {
+  padding: var(--spacing-sm) var(--spacing-md);
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  transition: all var(--transition-normal);
+  font-weight: var(--font-weight-medium);
+}
+
+.nav-link:hover,
+.nav-link.active {
+  color: var(--color-primary);
+  background: rgba(0, 212, 255, 0.1);
 }
 
 .logo {
